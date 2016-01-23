@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paragraph Tab List App</title>
+<title>Black Jack simulator prototype</title>
 
 <!--[if lt IE 9]>
 <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js">
@@ -22,21 +22,23 @@
 <body>
   <div id="wrapper">
     <header id="header">
-      <h1 class="main-heading">Paragraph parser</h1>
+      <h1 class="main-heading">Black Jack Simulator</h1>
     </header>
 
     <div id="main">
-      <div class="validation-message"></div>
-      
-      <form class="form" action="" method="post">
-        <label class="form__label" for="textarea-content">Insert the paragraph to be parsed:</label>
-        <textarea autocomplete="off" class="form__textarea" id="textarea-content" name="textarea-content" placeholder="Please enter a paragraph..."></textarea>
-        <input type="button" class="form__button btn--blue btn--medium" value="Submit">
-      </form>
-
-      <div class="table-box"></div>
-
-      <div class="counter-summary"></div>
+      <div class="gamefield">
+        <div class="gamefield__message">Click on start to play!</div>
+        <div class="gamefield__table">
+          <div class="gamefield__table__dealer"></div>
+          <div class="gamefield__table__user"></div>  
+        </div>
+        <div class="gamefield__controls">
+          <input autocomplete="off" type="button" id="start" class="gamefield__controls__btn btn--green btn--medium" value="Start"> 
+          <input autocomplete="off" type="button" id="hit" class=" gamefield__controls__btn btn--blue btn--medium" disabled="disabled" value="Hit">
+          <input autocomplete="off" type="button" id="stand" class="gamefield__controls__btn btn--blue btn--medium" disabled="disabled" value="Stand">
+          <input autocomplete="off" type="button" id="next-hand" class="gamefield__controls__btn btn--orange btn--medium" disabled="disabled" value="Next Hand"> 
+        </div>
+      </div>
     </div>
   </div>
 

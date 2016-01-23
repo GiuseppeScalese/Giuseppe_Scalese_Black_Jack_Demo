@@ -47,6 +47,15 @@
 	}
 }
 
+input.btn[disabled], input.is-disabled {
+	border: 1px solid #999;
+	background-color: $button-background-disable-color;
+	color: $button-disable-font-color;
+	opacity: 0.65; 
+  	cursor: not-allowed;
+}
+
+
 
 
 

@@ -5,238 +5,272 @@ var MyApp = MyApp || {};
 //create my app namespace
 var MyApp = (function(){
 
-  //commas and fullStops counter on form submit
-  var commasTotal,fullStopsTotal;
+  //set array for cards deck and dealer/user cards counters
+  var randomSetCardsArray = [];
+  var userCardsTotal, dealerCardsTotal, dealerHiddenCard;
 
-  //private method - it shows customise error messages
-  var _validationError = function (errorMessage) {
-     $(".validation-message").html("<span class="+'error-message'+">" + errorMessage + "</span>").fadeIn();
+  //private method - it shows customise messages
+  var _showMessage = function (message) {
+     $(".card-result-list .hidden").html(dealerHiddenCard).fadeIn();
+     $(".gamefield__message").html(message).fadeIn();
+  }; 
+
+
+  //private method - resets buttons initial state and cards deck
+  var _resetButtonsState = function () {
+
+    //enable stand, hit and next-hand button to be used
+    $("#hit").prop("disabled", true);
+    $("#stand").prop("disabled", true); 
+    $("#next-hand").prop("disabled", true);
+    $("#start").prop("disabled", false);
+
+    //clear old cards deck
+    randomSetCardsArray = [];
   };
 
-  //private method - checks both words and chars left
-  //returns an object with info about the textarea value passed as argument
-  var _checkAppCounters = function(val){
-        return {
-            charactersNoSpaces : val.replace(/\s+/g, '').length,
-            characters         : val.length,
-            lines              : val.split(/\r*\n/).length,
-            commas             : val.split(",").length-1,
-            fullStop           : val.split(".").length-1
-        }
-  };
 
-  //private method - checks typed characters and runs textarea validation 
-  var _checkRemainingCharsWords = function () {
-
-    var $targetBox = $('.counter-summary');
-
-    //listens to key event on "keyup"
-    $('#textarea-content').on('keyup', function(e){
-
-      //regex to allow only alphabetical chars and chars like ',. and line break
-      var regExNumbers = /^[a-zA-Z ',.\n]+$/; 
-      var strTest = regExNumbers.test(this.value);
-
-      //checks value existence
-      if(this.value){
-
-        //checks if the char is valid - return value true
-        if(strTest){
+  //private method - creates and returns an array of a random set of 52 cards 
+  var _createRandomDeck = function() {
+    var max = 52;
     
-          //access object to get counter info
-          var c = _checkAppCounters(this.value);
-
-          commasTotal = c.commas;
-          fullStopsTotal = c.fullStop;
-
-          //shows the counters result on user type
-          $targetBox.html(
-              "<span>Characters (no spaces): "+ c.charactersNoSpaces + "</span>" +
-              "<span>Characters (and spaces): "+ c.characters + "</span>" +
-              "<span>Lines: "+ c.lines + "</span>"     
-          );
-
-          $(".validation-message").fadeOut();
+    //creates and array of 52 cards already shuffled
+    for(var i=0; i<max ; i++){
+        var temp = Math.floor(Math.random() * max+1);
+        
+        //if the string is not contained then add it to array
+        if(randomSetCardsArray.indexOf(temp) === -1){
+          randomSetCardsArray.push(temp);
         }
         else{
-          //it handles the wrong chars inserted
-          var errorMessage = "Character not allowed. Only alphabetic characters, commas, fullstop and apostrophe are allowed."
-          
-          var regExExclusion = /[^a-zA-Z ',.\n]+/g;
-          
-          //it removes the wrong chars inserted
-          this.value = this.value.replace(regExExclusion,'');
-
-          //show validation error message
-          _validationError(errorMessage);
-
-          return false;
-        }
-      }
-        
-    });  
-
-   
+          i--;
+        }   
+    }
+    return randomSetCardsArray;
   };
 
-  //private method - create table dinamically
-  var _showContentInPage = function(sameElementsArray,initial){
 
-    var sameWordCounter = 1;
+  //private method - retrieves the value of the cards from the deal function
+  var _getValue = function(card) {
 
-    $(".table-box").show();
-    
-    //create table structure for each array of elements
-    var tableElement = $("<table class="+'table-box__content'+"><thead><tr><th>"+initial+"</td></tr></thead><tbody></tbody></table>");
-    $(".table-box").append(tableElement);
-
-    //loop through each array of elements and injuct the HTML in the DOM
-    for(var i=0; i<sameElementsArray.length; i++){
-
-      //counts the same words
-      if(sameElementsArray[i] === sameElementsArray[i+1]){
-        sameWordCounter++
-        sameElementsArray.splice(i,1);
-        i--;
+      if(card % 13 === 0 || card % 13 === 11 || card % 13 === 12){
+          return 10;   
+      }
+      if(card % 13 === 1){
+          return 11;   
       }
       else{
-        //group same words if exist
-        if(sameWordCounter > 1){
-          var elementToAppend = $('<tr><td>'+ sameElementsArray[i] + ' (' + sameWordCounter + ')' +'</td></tr>');
-          sameWordCounter = 1;
-        }
-        //show single word instead
-        else{
-          var elementToAppend = $('<tr><td>'+ sameElementsArray[i] +'</td></tr>');
-        }
-        elementToAppend.appendTo(tableElement);
+          return card % 13;
       }
-
-    }
-    
-  }
-
-  //private method - clean up array before iterating it
-  var _cleanUpArray = function(){
-
-    //regex to remove commas and full stops from inserted string
-    var regex = /[.,]/g;
-
-    //push textarea data into an array, trim space, lower case string, add comma as separator and sort it alphabetically
-    var textareaContent = $('#textarea-content').val().toLowerCase().replace(regex,' ').trim().split(" ").sort();
-    
-    //remove any aphostrope occurence from beginning of each word in array
-    for (var i=0; i<textareaContent.length; i++) 
-    {
-      if(textareaContent[i].charAt(0) === "'"){
-          textareaContent[i] = textareaContent[i].replace(/'/g, "");     
-      }
-    }
-
-    //remove empty array empty cells
-    textareaContent = $.grep(textareaContent,function(n){
-      return n;
-    });
-
-    //remove aphostropy char array cells
-    var removeItem = "'";
-    textareaContent = $.grep(textareaContent,function(n){
-      return n != removeItem;
-    });
-
-    return textareaContent;
-  }
-
-
-
-  //private method - shows textarea data in table
-  var _processResponse = function(textareaContent){
-
-    //clean table in the DOM before showing data again
-    $(".table-box").empty();
-
-    var elementSelected, firstCharElementSelected,nextCharElementSelected;
-
-    //loop through the array to find similar words and add them in the table
-    for (var i=0; i<textareaContent.length; i++) 
-    {
-        var sameElementsArray = [];
-
-        //get first element
-        elementSelected = textareaContent[i];
-
-        //get first element first char
-        firstCharElementSelected = elementSelected.charAt(0);
-
-        //add element to its own array
-        sameElementsArray.push(textareaContent[i]);
-
-        //loop through the same array to find element with same initial and add in the same array
-        for (var x=1; x<textareaContent.length; x++) 
-        {
-          //get next element
-          var nextElement = textareaContent[x];
-
-          //get next element first char
-          nextCharElementSelected = nextElement.charAt(0);
-
-          //if they have the same initial add it in the same array
-          if(firstCharElementSelected === nextCharElementSelected){
-          
-            sameElementsArray.push(textareaContent[x]);
-
-            //remove the element from the array and re-index the 'for loop' index
-            textareaContent.splice(x,1);
-            x--;
-          }
-        }
-
-        textareaContent.splice(i,1);
-        i--;
-
-        //add dinamically element to table
-        _showContentInPage(sameElementsArray,firstCharElementSelected);
-    }
   };
 
-  //public method - handles the words validations
-  var stringValidation = function () {
-     _checkRemainingCharsWords();
+
+  //private method - update user total score
+  var _updateUserTotal = function() {
+    $(".gamefield__table__user .total-number").html(userCardsTotal);
+  } 
+
+
+  //private method - update dealer total score
+  var _updateDealerTotal = function() {
+    $(".gamefield__table__dealer .total-number").html(dealerCardsTotal);
+  } 
+
+
+  //private method - checks the dealer score of the game
+  var _checkDealerGamescore = function() {
+
+    var resultMessage;
+
+    if (dealerCardsTotal > 21){
+      resultMessage = "Dealer bust. You win!";
+      _updateDealerTotal();
+      _showMessage(resultMessage);
+    }
+
+    else if (dealerCardsTotal > userCardsTotal){
+      resultMessage = "You lose. Dealer wins!";
+      _updateDealerTotal();
+      _showMessage(resultMessage);
+    }
+    
+    else if (dealerCardsTotal === userCardsTotal){
+      resultMessage = "Push. It's a draw!";
+      _updateDealerTotal();
+      _showMessage(resultMessage);
+    } 
+
+    //if the dealer still losing then picks another card
+    else if (dealerCardsTotal < userCardsTotal){
+      _dealerHand();
+    } 
+
   };
 
-  //public method - handles the form submit
-  var submitEvent = function () {
-      //listens to button click and get the textarea data
-      $('.form__button').click(function() {
 
-          //clean up array from commas, spaces and full stops
-          var textareaContent = _cleanUpArray();
-          var wordsTotal = textareaContent.length;
+  //private method - checks the user score of the game
+  var _checkUserGamescore = function() {
 
-          //process response and show results if words number is between 5 and 500
-          if(wordsTotal >= 5 && wordsTotal <= 500){
-            _processResponse(textareaContent); 
+    var resultMessage;
 
-            //inject totla words, commas and full stops
-            $(".counter-summary").prepend("<span>Words: "+wordsTotal+ "</span>" + 
-              "<span>Full stops: " + fullStopsTotal + "</span>"+
-              "<span>Commas: "+commasTotal+ "</span>");
-          }
-          else{
-            var errorMessage = "The amount of words you can insert is between 5 and 500."
-           _validationError(errorMessage);
-          }     
+    //sets the black jack limit for the user
+    if (userCardsTotal > 21){
+      resultMessage = "You went bust. Dealer wins!";
+      _showMessage(resultMessage);
+
+      //update also dealer total on screen
+      _updateDealerTotal();
+
+      //reset buttons initial state for another game
+      _resetButtonsState();
+    }
+    //update user total on screen
+     _updateUserTotal();
+  };
+
+
+  //private method - creates an array of random set of 52 cards 
+  var _dealerHand = function() {
+    
+    //get dealer new card
+    var newCardPicked = _getValue(randomSetCardsArray[0]);
+
+    //remove card just used from cards deck
+    randomSetCardsArray = randomSetCardsArray.splice(1);
+
+    //calculates new dealer cards total
+    dealerCardsTotal = dealerCardsTotal + newCardPicked;
+  
+   //update new dealer card value into the DOM
+    var dealerCardsValue = $('<li>'+newCardPicked+'</li>');
+    $(".gamefield__table__dealer .card-result-list").append(dealerCardsValue);
+
+    _updateDealerTotal();
+
+    //check the dealer score
+    _checkDealerGamescore();
+  };
+
+
+  //private method - handles the start game event
+  var _startGame = function () {
+
+    //clear dealer/user field for a new hand
+    $(".gamefield__table__dealer").empty();
+    $(".gamefield__table__user").empty();
+    $('.gamefield__message').fadeOut();
+
+    //enable stand, hit and next-hand button to be used
+    $("#hit").prop("disabled", false);
+    $("#stand").prop("disabled", false); 
+    $("#next-hand").prop("disabled", false); 
+
+    //disable start button
+    $("#start").prop("disabled", true); 
+
+    //create random 52 cards deck
+    randomSetCardsArray = _createRandomDeck();
+ 
+    //get user first and second card
+    var userFirstCard = _getValue(randomSetCardsArray[0]);
+    var userSecondCard = _getValue(randomSetCardsArray[1])
+    userCardsTotal = userFirstCard + userSecondCard;
+
+    //update user cards value into the DOM
+    var userCardsValue = $('<h2>User cards:</h2><ul class="card-result-list">'+'<li>'+userFirstCard+'</li>'+
+    '<li>'+userSecondCard+'</li></ul>'+'<div class="total"><span class="total-label">Total: </span><span class="total-number">'+userCardsTotal+'</span>'+'</div>');
+    $(".gamefield__table__user").append(userCardsValue);
+
+    //get dealer first and second card then calculates its current total
+    var dealerFirstCard = _getValue(randomSetCardsArray[2]);
+    var dealerSecondCard = _getValue(randomSetCardsArray[3])
+    dealerHiddenCard = dealerSecondCard;
+    dealerCardsTotal = dealerFirstCard + dealerSecondCard;
+
+    //update user cards value into the DOM
+    var dealerCardsValue = $('<h2>Dealer cards:</h2><ul class="card-result-list">'+'<li>'+dealerFirstCard+'</li>'+
+    '<li class="hidden">HIDDEN CARD</li></ul>'+'<div class="total"><span class="total-label">Total: </span><span class="total-number">'+dealerFirstCard+' +...?</span>'+'</div>');
+
+    $(".gamefield__table__dealer").append(dealerCardsValue);
+
+    //remove cards just used from cards deck
+    randomSetCardsArray = randomSetCardsArray.splice(4);
+  };
+
+
+  //private method - handles the hit event
+  var _hitMove = function () {
+   
+    //get user new card
+    var newCardPickedValue = _getValue(randomSetCardsArray[0]);
+
+    //remove cards just used from cards deck
+    randomSetCardsArray = randomSetCardsArray.splice(1);
+    
+    //add new card picked in the user results
+    var newCardValue = $('<li>'+newCardPickedValue+'</li>');
+    $(".gamefield__table__user .card-result-list").append(newCardValue);
+
+    //calculates new user total
+    userCardsTotal = newCardPickedValue + userCardsTotal;
+   
+    //checks the user score
+     _checkUserGamescore();
+  };
+
+
+   //private method - handles the stand event 
+  var _standMove = function () {
+
+    //check the current score for the dealer
+    _checkDealerGamescore();
+
+    //reset buttons initial state for another game
+    _resetButtonsState();
+  };
+
+  //private method - handles the next hand event 
+  var _nextHand = function () {
+
+    //clear dealer/user field for a new hand
+    $(".gamefield__table__dealer").empty();
+    $(".gamefield__table__user").empty();
+    $('.gamefield__message').html("Click on start to play!").fadeIn();
+
+    //reset buttons initial state for another game
+    _resetButtonsState();
+  };
+
+
+  //public method - handles the button click and its functionalities
+  var gameEventListener = function () {
+
+      //listens to the start button event
+      $('#start').click(function() {
+        _startGame();
+      });
+
+      //listens to the hit button event
+      $('#hit').click(function() {
+        _hitMove();
+      });
+
+      //listens to the stand button event
+      $('#stand').click(function() {   
+        _standMove();
+      });
+
+      //listens to the next hand button event
+      $('#next-hand').click(function() {   
+        _nextHand();
       });
   };
 
   return {
-      stringValidation: stringValidation,
-      submitEvent : submitEvent
+      gameEventListener: gameEventListener
   };
 
 })();
 
-MyApp.stringValidation();
-MyApp.submitEvent();
+MyApp.gameEventListener();
 
- 
